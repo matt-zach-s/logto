@@ -1,0 +1,13 @@
+# metadata
+
+version = "v2"
+
+display_name = "Logto"
+description  = "Logto identity and access management (OIDC / OAuth 2.1 / SAML) running in your own AWS account."
+readme       = "./app-readme.md"
+
+[onboarding]
+enabled        = true
+category       = "self-hosted"
+difficulty     = "simple"
+cloud_provider = "aws"

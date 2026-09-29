@@ -1,0 +1,118 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logto-scripts
+  namespace: logto
+data:
+  # URL-encode the generated Postgres password into DB_URL, then run the given npm script.
+  # Logto's DB driver decodes the password, so any generated characters are safe.
+  run.sh: |
+    #!/bin/sh
+    set -e
+    ENCODED_PASSWORD="$(node -e 'process.stdout.write(encodeURIComponent(process.env.DB_PASSWORD))')"
+    export DB_URL="postgres://logto:${ENCODED_PASSWORD}@postgres.logto.svc.cluster.local:5432/logto"
+    exec npm run "$@"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: logto
+  namespace: logto
+  labels:
+    app: logto
+spec:
+  type: ClusterIP
+  selector:
+    app: logto
+  ports:
+    - name: app
+      port: 3001
+      targetPort: 3001
+    - name: admin
+      port: 3002
+      targetPort: 3002
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: logto
+  namespace: logto
+  labels:
+    app: logto
+spec:
+  replicas: 1
+  # First boot pulls the image, waits for Postgres and seeds the database.
+  progressDeadlineSeconds: 1200
+  selector:
+    matchLabels:
+      app: logto
+  template:
+    metadata:
+      labels:
+        app: logto
+    spec:
+      volumes:
+        - name: scripts
+          configMap:
+            name: logto-scripts
+            defaultMode: 0755
+      initContainers:
+        # Seeds the schema on first boot; --swe skips when the database is already seeded.
+        - name: db-seed
+          image: "{{ .nuon.components.logto_image.outputs.image.repository }}:{{ .nuon.components.logto_image.outputs.image.tag }}"
+          command: ["/scripts/run.sh"]
+          args: ["cli", "db", "seed", "--", "--swe"]
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: logto-postgres
+                  key: password
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts
+      containers:
+        - name: logto
+          image: "{{ .nuon.components.logto_image.outputs.image.repository }}:{{ .nuon.components.logto_image.outputs.image.tag }}"
+          command: ["/scripts/run.sh"]
+          args: ["start"]
+          ports:
+            - name: app
+              containerPort: 3001
+            - name: admin
+              containerPort: 3002
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: logto-postgres
+                  key: password
+            - name: TRUST_PROXY_HEADER
+              value: "1"
+            - name: ENDPOINT
+              value: "https://{{ .nuon.inputs.inputs.auth_subdomain }}.{{ .nuon.install.sandbox.outputs.nuon_dns.public_domain.name }}"
+            - name: ADMIN_ENDPOINT
+              value: "https://{{ .nuon.inputs.inputs.admin_subdomain }}.{{ .nuon.install.sandbox.outputs.nuon_dns.public_domain.name }}"
+          readinessProbe:
+            httpGet:
+              path: /oidc/.well-known/openid-configuration
+              port: 3001
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /oidc/.well-known/openid-configuration
+              port: 3001
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            failureThreshold: 6
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              memory: 1Gi
+          volumeMounts:
+            - name: scripts
+              mountPath: /scripts

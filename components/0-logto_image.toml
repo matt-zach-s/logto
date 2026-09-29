@@ -1,0 +1,7 @@
+# Logto's released image. Nuon copies it into the install's registry.
+name = "logto_image"
+type = "container_image"
+
+[public]
+image_url = "ghcr.io/logto-io/logto"
+tag       = "1.43.0"

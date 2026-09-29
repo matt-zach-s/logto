@@ -1,0 +1,24 @@
+type                 = "maintenance"
+name                 = "{{.nuon.install.id}}-maintenance"
+description          = "operate and update Logto's components."
+display_name         = "maintenance role"
+permissions_boundary = "./maintenance_boundary.json"
+
+[[policies]]
+managed_policy_name = "AdministratorAccess"
+
+[[policies]]
+name     = "{{.nuon.install.id}}-allow-secret-list"
+contents = """
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "AllowListSecrets",
+            "Effect": "Allow",
+            "Action": ["secretsmanager:ListSecrets"],
+            "Resource": "*"
+        }
+    ]
+}
+"""

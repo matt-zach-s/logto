@@ -1,0 +1,10 @@
+name             = "logto"
+type             = "kubernetes_manifest"
+namespace        = "logto"
+dependencies     = ["logto_image", "postgres"]
+manifest         = "./manifests/logto.yaml"
+max_auto_retries = 3
+
+[health]
+block_deploy         = true
+stabilization_window = "5m"

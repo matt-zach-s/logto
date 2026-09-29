@@ -1,0 +1,23 @@
+# sandbox
+
+terraform_version = "1.13.5"
+
+[public_repo]
+directory = "."
+repo      = "nuonco/aws-eks-auto-sandbox"
+branch    = "bd1c6e0d3b0182ef17d7538a5b20135c51178069"
+
+[vars]
+cluster_name    = "logto-{{.nuon.install.id}}"
+cluster_version = "1.34"
+region          = "{{.nuon.install_stack.outputs.region}}"
+vpc_id          = "{{.nuon.install_stack.outputs.vpc_id}}"
+
+enable_irsa = "true"
+
+enable_nuon_dns      = "true"
+public_root_domain   = "{{.nuon.install.id}}.nuon.run"
+internal_root_domain = "{{.nuon.install.id}}.internal.nuon.run"
+
+[[var_file]]
+contents = "./sandbox.tfvars"

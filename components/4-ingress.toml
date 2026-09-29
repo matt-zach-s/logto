@@ -1,0 +1,11 @@
+# Two hostnames (auth + admin console) on one shared ALB, so these are hand-written Ingresses
+# rather than two copies of the nuonco/components ALB chart, which would share a Helm release name.
+name             = "ingress"
+type             = "kubernetes_manifest"
+namespace        = "logto"
+dependencies     = ["logto", "certificate"]
+manifest         = "./manifests/ingress.yaml"
+max_auto_retries = 5
+
+[health]
+block_deploy = true

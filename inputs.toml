@@ -1,0 +1,20 @@
+# inputs
+
+[[group]]
+name         = "logto"
+display_name = "Logto"
+description  = "Where Logto is served."
+
+[[input]]
+name         = "auth_subdomain"
+display_name = "Auth subdomain"
+description  = "Subdomain for the Logto OIDC endpoint and sign-in experience (ENDPOINT)."
+default      = "auth"
+group        = "logto"
+
+[[input]]
+name         = "admin_subdomain"
+display_name = "Admin console subdomain"
+description  = "Subdomain for the Logto admin console (ADMIN_ENDPOINT)."
+default      = "admin"
+group        = "logto"

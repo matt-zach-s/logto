@@ -1,0 +1,6 @@
+name = "postgres_image"
+type = "container_image"
+
+[public]
+image_url = "docker.io/library/postgres"
+tag       = "17-alpine"

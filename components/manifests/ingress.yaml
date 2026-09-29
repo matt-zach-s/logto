@@ -1,0 +1,61 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: logto-auth
+  namespace: logto
+  labels:
+    app.nuon.co/install: "{{ .nuon.install.id }}"
+  annotations:
+    alb.ingress.kubernetes.io/group.name: "logto"
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/certificate-arn: "{{ .nuon.components.certificate.outputs.public_domain_certificate_arn }}"
+    # /api/status returns 204, which fails an ALB target group; the OIDC discovery document returns 200.
+    alb.ingress.kubernetes.io/healthcheck-path: /oidc/.well-known/openid-configuration
+    alb.ingress.kubernetes.io/success-codes: "200"
+    external-dns.alpha.kubernetes.io/hostname: "{{ .nuon.inputs.inputs.auth_subdomain }}.{{ .nuon.install.sandbox.outputs.nuon_dns.public_domain.name }}"
+spec:
+  ingressClassName: alb
+  rules:
+    - host: "{{ .nuon.inputs.inputs.auth_subdomain }}.{{ .nuon.install.sandbox.outputs.nuon_dns.public_domain.name }}"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: logto
+                port:
+                  number: 3001
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: logto-admin
+  namespace: logto
+  labels:
+    app.nuon.co/install: "{{ .nuon.install.id }}"
+  annotations:
+    alb.ingress.kubernetes.io/group.name: "logto"
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/listen-ports: '[{"HTTPS":443}]'
+    alb.ingress.kubernetes.io/certificate-arn: "{{ .nuon.components.certificate.outputs.public_domain_certificate_arn }}"
+    alb.ingress.kubernetes.io/healthcheck-path: /oidc/.well-known/openid-configuration
+    alb.ingress.kubernetes.io/success-codes: "200"
+    external-dns.alpha.kubernetes.io/hostname: "{{ .nuon.inputs.inputs.admin_subdomain }}.{{ .nuon.install.sandbox.outputs.nuon_dns.public_domain.name }}"
+spec:
+  ingressClassName: alb
+  rules:
+    - host: "{{ .nuon.inputs.inputs.admin_subdomain }}.{{ .nuon.install.sandbox.outputs.nuon_dns.public_domain.name }}"
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: logto
+                port:
+                  number: 3002
