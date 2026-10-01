@@ -1,0 +1,29 @@
+# Read-only diagnostics for the ingress: Ingress events, ALB controller state and logs, certificate status.
+name               = "debug_ingress"
+timeout            = "3m"
+enable_kube_config = true
+
+[[triggers]]
+type = "manual"
+
+[[steps]]
+name            = "describe ingress and alb controller"
+inline_contents = """
+#!/usr/bin/env sh
+echo "=== ingresses"
+kubectl get ingress -n logto -o wide || true
+echo "=== describe ingress"
+kubectl describe ingress -n logto || true
+echo "=== ingressclasses"
+kubectl get ingressclass -o wide || true
+echo "=== alb controller pods"
+kubectl get pods -n alb-ingress-controller -o wide || true
+echo "=== alb controller logs"
+kubectl logs -n alb-ingress-controller -l app.kubernetes.io/name=aws-load-balancer-controller --tail=150 --all-containers || true
+echo "=== warning events, all namespaces"
+kubectl get events -A --field-selector type=Warning --sort-by=.lastTimestamp || true
+echo "=== certificate"
+CERT_ARN=$(kubectl get ingress logto-auth -n logto -o jsonpath='{.metadata.annotations.alb\\.ingress\\.kubernetes\\.io/certificate-arn}')
+echo "$CERT_ARN"
+aws acm describe-certificate --certificate-arn "$CERT_ARN" --query 'Certificate.[Status,DomainName,DomainValidationOptions[].ValidationStatus]' --output text || true
+"""
